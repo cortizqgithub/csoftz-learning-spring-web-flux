@@ -1,8 +1,17 @@
 = CSoftZ Learning Spring WebFlux (csoftz-learning-spring-web-flux) README
 
-20190828-V1.0.0
+20190829-V1.0.1
 
 This repository is a step by step commit while learning Spring Web Flux using Reactor.
 It is based on https://reactor.github.io/head-first-reactive-with-spring-and-reactor/
 
 Full instructions https://reactor.github.io/head-first-reactive-with-spring-and-reactor/
+
+[IMPORTANT]
+====
+In order to execute the `Trading Service` Application, you must be running the other two applications. Remember to run them in the following order.
+
+* Stock Quotes Application (it runs in port 8081).
+* Stock Details Application (it runs in port 8082).
+* Trading Service (this app, it runs in port 8080).
+====
