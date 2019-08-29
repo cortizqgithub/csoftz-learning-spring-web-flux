@@ -42,7 +42,7 @@ public class QuoteGenerator {
         this.prices.add(new Quote("RHT", 84.29));
         this.prices.add(new Quote("VMW", 92.21));
     }
-    
+
     private Flux<Quote> getQuoteStream() {
         return Flux.interval(Duration.ofMillis(200))
                 .onBackpressureDrop()
