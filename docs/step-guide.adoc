@@ -335,7 +335,6 @@ Then add two new Controller methods in order to handle:
 include::../app-code/back-end/microservices/stock-details/src/main/java/io/spring/workshop/stockdetails/controller/TradingCompanyController.java[]
 ----
 
-
 It can be started from your IDE or with `mvn spring-boot:run` and it should run a Netty server on port 8082.
 You should see in the logs something like:
 
@@ -345,8 +344,7 @@ INFO 2208 --- [  restartedMain] o.s.b.web.embedded.netty.NettyWebServer  : Netty
 INFO 2208 --- [  restartedMain] i.s.w.s.StockDetailsApplication           : Started StockDetailsApplication in 1.905 seconds (JVM running for 3.075)
 ----
 
-Now that we have an application that can return the details for a company with a given ticker, we can update the Trading Service application
-to use those details and return a combination of the latest quote for that ticker along with the company's details.
+Now that we have an application that can return the details for a company with a given ticker, we can update the Trading Service application to use those details and return a combination of the latest quote for that ticker along with the company's details.
 
 == Update Trading Service application
 
@@ -358,7 +356,19 @@ Then add two methods:
 * `getTradingCompany` will return a `Mono<TradingCompany>` by using the webClient to get data from the `/details/{ticker}` endpoint from the Stock details application
   - If no trading company is found for the given ticker, the `Mono` will complete without any data. Instead, we will emit a `TickerNotFoundException` error using the `switchIfEmpty` operator.
 
+[source,java]
+.trading-service/src/main/java/io/spring/workshop/tradingservice/component/TradingCompanyClient.java
+----
+include::../app-code/back-end/microservices/trading-service/src/main/java/io/spring/workshop/tradingservice/component/TradingCompanyClient.java[]
+----
+
 Let's expose the two `TradingCompanyClient` methods with a local `TradingCompanyController`.
+
+[source,java]
+.trading-service/src/main/java/io/spring/workshop/tradingservice/controller/TradingCompanyController.java
+----
+include::../app-code/back-end/microservices/trading-service/src/main/java/io/spring/workshop/tradingservice/controller/TradingCompanyController.java[]
+----
 
 You might have updated an already running `TradingServiceApplication`. Since DevTools is present, you can just recompile to automatically restart the application.
 
@@ -368,6 +378,15 @@ You can test the new endpoints by hitting:
 * http://localhost:8080/details/MSFT to get details for a particular ticker
 * http://localhost:8080/details/PIZZA to see what happens for an unknown ticker
 
+[IMPORTANT]
+====
+In order to execute the `Trading Service` Application, you must be running the other two applications. Remember to run them in the following order.
+
+* Stock Quotes Application (it runs in port 8081).
+* Stock Details Application (it runs in port 8082).
+* Trading Service (this app, it runs in port 8080).
+====
+
 Let's add a method called `getLatestQuote(String ticker)` on the `QuotesClient` which will get the latest quote for a given ticker from the quotes feed.
 
 * Reuse `quotesFeed` to get the actual feed
@@ -375,14 +394,24 @@ Let's add a method called `getLatestQuote(String ticker)` on the `QuotesClient` 
 * Take the next matching quote
 * If no matching quote is found within 15 seconds, then return a fallback `Quote` for the ticker.
 
+[source,java]
+----
+    public Mono<Quote> getLatestQuote(String ticker) {
+		return quotesFeed()
+				.filter(q -> q.getTicker().equalsIgnoreCase(ticker))
+				.next()
+				.timeout(Duration.ofSeconds(15), Mono.just(new Quote(ticker)));
+	}
+----
+
 Now, we want to combine data produced by `stock-quotes` and `stock-details` as a `TradingCompanySummary`.
 
 Copy the following class to your project.
 
 [source,java]
-.trading-service/src/main/java/io/spring/workshop/tradingservice/TradingCompanySummary.java
+.trading-service/src/main/java/io/spring/workshop/tradingservice/domain/TradingCompanySummary.java
 ----
-include::../trading-service/src/main/java/io/spring/workshop/tradingservice/TradingCompanySummary.java[]
+include::../app-code/back-end/microservices/trading-service/src/main/java/io/spring/workshop/tradingservice/domain/TradingCompanySummary.java[]
 ----
 
 Now, add another method to the `QuotesController` which can handle requests to `/quotes/summary/{ticker}`.
@@ -390,10 +419,29 @@ Now, add another method to the `QuotesController` which can handle requests to `
 * Use the `TradingCompanyClient` to get the details for the company with the given ticker
 * Create a `TradingCompanySummary` by composing the details with the latest quote from the `QuotesClient`
 
+[source,java]
+----
+    @GetMapping(path = "/quotes/summary/{ticker}", produces = APPLICATION_JSON_VALUE)
+	@ResponseBody
+	public Mono<TradingCompanySummary> quotesDetails(@PathVariable String ticker) {
+		return tradingCompanyClient.getTradingCompany(ticker)
+				.zipWith(this.quotesClient.getLatestQuote(ticker),
+						TradingCompanySummary::new);
+	}
+----
+
 TIP: You can compose two reactive results using `Mono.zip(monoA, monoB, biFunction)` or `monoA.zipWith(monoB, biFunction)`.
 
 We need to handle the `TickerNotFoundException` emitted by the `TradingCompanyClient` as an HTTP 404.
 You will need to create a method annotated with `@ExceptionHandler`.
+
+[source,java]
+----
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+	@ExceptionHandler(TickerNotFoundException.class)
+	public void onTickerNotFound() {
+	}
+----
 
 Again, because of DevTools we can just recompile and test by hitting:
 
@@ -402,6 +450,11 @@ Again, because of DevTools we can just recompile and test by hitting:
 
 Now, we will look at creating a functional-style WebFlux application by re-creating the Stock Quotes Application.
 Fasten your seatbelt and remove the stock-quotes directory!
+
+[NOTE]
+====
+This task is left to you.
+====
 
 == Additional Resources
 
