@@ -1,0 +1,8 @@
+= CSoftZ Learning Spring WebFlux (csoftz-learning-spring-web-flux) README
+
+20190828-V1.0.0
+
+This repository is a step by step commit while learning Spring Web Flux using Reactor.
+It is based on https://reactor.github.io/head-first-reactive-with-spring-and-reactor/
+
+Full instructions https://reactor.github.io/head-first-reactive-with-spring-and-reactor/
