@@ -42,8 +42,7 @@ public class QuoteGenerator {
         this.prices.add(new Quote("RHT", 84.29));
         this.prices.add(new Quote("VMW", 92.21));
     }
-
-
+    
     private Flux<Quote> getQuoteStream() {
         return Flux.interval(Duration.ofMillis(200))
                 .onBackpressureDrop()
@@ -57,7 +56,7 @@ public class QuoteGenerator {
         return prices.stream()
                 .map(baseQuote -> {
                     BigDecimal priceChange = baseQuote.getPrice()
-                            .multiply(new BigDecimal(0.05 * this.random.nextDouble()), this.mathContext);
+                            .multiply(BigDecimal.valueOf(0.05 * this.random.nextDouble()), this.mathContext);
 
                     Quote result = new Quote(baseQuote.getTicker(), baseQuote.getPrice().add(priceChange));
                     result.setInstant(instant);

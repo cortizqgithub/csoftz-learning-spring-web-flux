@@ -13,7 +13,6 @@ import reactor.core.publisher.Mono;
 
 @Component
 public class QuotesClient {
-
     private final WebClient webClient;
 
     public QuotesClient(WebClient.Builder webclientBuilder) {
